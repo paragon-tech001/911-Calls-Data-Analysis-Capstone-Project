@@ -1,6 +1,7 @@
 # 911-Calls-Data-Analysis-Capstone-Project
 
 ## 📌 Introduction
+![](911_call_center.jpg)
 This project explores and analyzes a dataset of **911 emergency calls** from Montgomery County, Pennsylvania, USA. The goal is to uncover patterns and trends in emergency incidents using Python data analysis techniques and data visualization.  
 The analysis also demonstrates practical skills in **data wrangling**, **exploratory data analysis (EDA)**, **time series analysis**, and **visual storytelling**.
 
@@ -32,6 +33,7 @@ This project analyzes over **600,000 records** of 911 calls to answer key questi
 ---
 
 ## 📂 Data Sourcing
+![](data_source.PNG)
 The dataset was obtained from [Kaggle – Montco 911 Calls](https://www.kaggle.com/mchirico/montcoalert).  
 It contains real emergency call data from Montgomery County, Pennsylvania.
 
@@ -55,6 +57,19 @@ The dataset includes the following columns:
 ---
 
 ## 🧹 Data Preparation
+```python
+import pandas as pd
+import numpy as np
+# to import matplotlib and set %matplotlib inline
+import matplotlib.pyplot as plt
+import seaborn as sns
+# loading the dataset
+df = pd.read_csv(r"C:\Users\ADMIN\Desktop\Paragon\Python\VS Code\Module-3 Python\Final project\911.csv")
+# checking the data info
+df.info()
+# checking the first 5 rows of the dataset
+df.head()
+```
 The following steps were performed during data preparation:
 1. **Loaded the dataset** into pandas DataFrame.
 2. **Checked data types** and converted `timeStamp` to datetime objects.
@@ -68,23 +83,36 @@ The following steps were performed during data preparation:
 ## ❓ Questions & Answers
 
 ### 1️⃣ What are the top 5 zip codes for 911 calls?
-
-- 19401.0 45606
-- 19464.0 43910
-- 19403.0 34888
-- 19446.0 32270
-- 19406.0 22464
+```python
+# Top 5 zipcodes for 911 calls
+top_zipcodes = df['zip'].value_counts().head(5)
+print("Top 5 Zipcodes:\n", top_zipcodes)
+```
+| Zipcodes| Count |
+|-----------|-------|
+|1. 19401.0 | 45606 |
+|2. 19464.0 | 43910 |
+|3. 19403.0 | 34888 |
+|4. 19446.0 | 32270 |
+|5. 19406.0 | 22464 |
 
 **Interpretation:** Zip code **19401** (Norristown area) had the highest number of emergency calls.
 
 ---
 
 ### 2️⃣ What are the top 5 townships for 911 calls?
-- LOWER MERION 55490
-- ABINGTON 39947
-- NORRISTOWN 37633
-- UPPER MERION 36010
-- CHELTENHAM 30574
+```python
+# Top 5 townships for 911 calls
+top_townships = df['twp'].value_counts().head(5)
+print("Top 5 Townships:\n", top_townships)
+```
+| Townships   | Count  |
+|-------------|--------|
+|1. LOWER MERION | 55490 |
+|2. ABINGTON     | 39947 |
+|3. NORRISTOWN   | 37633 |
+|4. UPPER MERION | 36010 |
+|5. CHELTENHAM   | 30574 |
 
 **Interpretation:** **Lower Merion Township** recorded the highest number of emergency calls.
 
@@ -142,32 +170,105 @@ plt.show()
 ---
 
 ### 4️⃣ How do emergency calls vary by day of week?
+```python
+# Checking the data type for sanity
+df['timeStamp'].dtype
+# Convert 'timeStamp' from string to datetime
+df['timeStamp'] = pd.to_datetime(df['timeStamp'])
+# Create new time-based columns
+df['Hour'] = df['timeStamp'].apply(lambda x: x.hour)
+df['Month'] = df['timeStamp'].apply(lambda x: x.month)
+df['DayOfWeek'] = df['timeStamp'].apply(lambda x: x.dayofweek)
+# Map DayOfWeek numbers to string names
+dmap = {0: 'Mon', 1: 'Tue', 2: 'Wed', 3: 'Thu', 4: 'Fri', 5: 'Sat', 6: 'Sun'}
+df['DayOfWeek'] = df['DayOfWeek'].map(dmap)
+# Countplot of Day of Week by Reason
+plt.figure(figsize=(12, 6))
+sns.countplot(data=df, x='DayOfWeek', hue='Reason', palette='coolwarm')
+plt.title("911 Calls by Day of Week")
+plt.legend(loc='upper right')
+plt.tight_layout()
+plt.show()
+
+```
 📷 ![](911_Calls_by_Day_of_Week.png)
 
 ---
 
 ### 5️⃣ How do emergency calls vary by month?
+```python
+# Countplot of Month by Reason
+plt.figure(figsize=(12, 6))
+sns.countplot(data=df, x='Month', hue='Reason', palette='Set2')
+plt.title("911 Calls by Month")
+plt.legend(loc='upper right')
+plt.tight_layout()
+plt.show()
+
+```
 📷 ![](911_Calls_by_Month.png)
 
 ---
 
 ### 6️⃣ What trends exist in 911 calls per month?
+```python
+# Group by Month and count number of calls
+by_month = df.groupby('Month').count()
+
+# Plot the count of calls per month
+plt.figure(figsize=(12, 6))
+by_month['twp'].plot()
+plt.title("911 Calls per Month")
+plt.xlabel("Month")
+plt.ylabel("Number of Calls")
+plt.tight_layout()
+plt.show()
+
+```
 📷 ![](911_Calls_per_Month.png)
 
 ---
 
 ### 7️⃣ What does the daily trend of calls look like by reason?
+```python
+# Separate line plots for each Reason
+plt.figure(figsize=(12, 6))
+for reason in df['Reason'].unique():
+    df[df['Reason'] == reason].groupby('Date').count()['twp'].plot(label=reason)
+plt.legend()
+plt.title("911 Calls Per Day by Reason")
+plt.tight_layout()
+plt.show()
+```
 📷 ![](911_Calls_Per_Day_by_Reason.png)
 
 ---
 
 ### 8️⃣ What patterns exist in 911 calls by hour and day of week? (Heatmap)
-📷 ![](Heatmap_of_911_Calls_by_Hour_and_Day_of_Week)
+```python
+# Create pivot table with DayOfWeek as index, Hour as columns
+day_hour = df.groupby(by=['DayOfWeek', 'Hour']).count()['Reason'].unstack()
+day_hour
+
+# Heatmap
+plt.figure(figsize=(12, 6))
+sns.heatmap(day_hour, cmap='viridis')
+plt.title("Heatmap of 911 Calls by Hour and Day of Week")
+plt.tight_layout()
+plt.show()
+```
+📷 ![](Heatmap_of_911_Calls_by_Hour_and_Day_of_Week.png)
 
 ---
 
 ### 9️⃣ What patterns exist in 911 calls by month and day of week? (Clustermap)
-📷 ![](Clustermap_of_911_Calls_by_Month_and_Day_of_Week)
+```python
+# Clustermap
+sns.clustermap(day_hour, cmap='viridis')
+plt.title("Clustermap of 911 Calls by Hour and Day of Week")
+plt.show()
+```
+📷 ![](Clustermap_of_911_Calls_by_Month_and_Day_of_Week.png)
 
 ---
 
@@ -188,6 +289,7 @@ plt.show()
 ---
 
 ## 🏁 Conclusion
+![](happy_conclusion.jpg)
 This analysis provides valuable insights into the patterns and trends in 911 emergency calls for Montgomery County, PA.  
 By understanding when, where, and why emergencies occur most frequently, emergency response teams can improve **resource allocation**, **response time**, and **public safety strategies**.
 
